@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: apigateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: productos-service
+          uri: lb://PRODUCTOS-SERVICE
+          predicates:
+            - Path=/productos/**
+        - id: ordenes-service
+          uri: lb://ORDENES-SERVICE
+          predicates:
+            - Path=/ordenes/**
+        - id: pagos-service
+          uri: lb://PAGOS-SERVICE
+          predicates:
+            - Path=/pagos/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:eureka-server}:8761/eureka/

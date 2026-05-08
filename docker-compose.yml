@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  eureka-server:
+    build: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - app-network
+
+  apigateway:
+    build: ./apigateway
+    container_name: apigateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+    networks:
+      - app-network
+
+  productos-service:
+    build: ./productos-service
+    container_name: productos-service
+    ports:
+      - "8081:8081"
+    environment:
+      - EUREKA_HOST=eureka-server
+      - MONGO_HOST=mongodb-productos
+      - MONGO_PORT=27017
+      - KAFKA_HOST=kafka
+      - KAFKA_PORT=29092
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    depends_on:
+      - eureka-server
+    networks:
+      - app-network
+
+  ordenes-service:
+    build: ./ordenes-service
+    container_name: ordenes-service
+    ports:
+      - "8082:8082"
+    environment:
+      - EUREKA_HOST=eureka-server
+      - MONGO_HOST=mongodb-ordenes
+      - MONGO_PORT=27017
+      - KAFKA_HOST=kafka
+      - KAFKA_PORT=29092
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    depends_on:
+      - eureka-server
+    networks:
+      - app-network
+
+  pagos-service:
+    build: ./pagos-service
+    container_name: pagos-service
+    ports:
+      - "8083:8083"
+    environment:
+      - EUREKA_HOST=eureka-server
+      - MONGO_HOST=mongodb-pagos
+      - MONGO_PORT=27017
+      - KAFKA_HOST=kafka
+      - KAFKA_PORT=29092
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    depends_on:
+      - eureka-server
+    networks:
+      - app-network
+
+  broker-message-be:
+    build: ./broker-message-be
+    container_name: broker-message-be
+    ports:
+      - "8084:8084"
+    environment:
+      DB_HOST: postgres-broker
+      DB_PORT: 5432
+      DB_NAME: broker_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      KAFKA_HOST: kafka
+      KAFKA_PORT: 29092
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
+      MONGO_HOST: mongodb-productos
+      MONGO_PORT: 27017
+    depends_on:
+      - eureka-server
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    external: true

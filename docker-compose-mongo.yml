@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  mongodb-productos:
+    image: mongo:latest
+    container_name: mongodb-productos
+    ports:
+      - "27020:27017"
+    environment:
+      MONGO_INITDB_DATABASE: productos-db
+    networks:
+      - app-network
+
+  mongodb-ordenes:
+    image: mongo:latest
+    container_name: mongodb-ordenes
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_DATABASE: ordenes-db
+    networks:
+      - app-network
+
+  mongodb-pagos:
+    image: mongo:latest
+    container_name: mongodb-pagos
+    ports:
+      - "27019:27017"
+    environment:
+      MONGO_INITDB_DATABASE: pagos-db
+    networks:
+      - app-network
+
+  postgres-broker:
+    image: postgres:15
+    container_name: postgres_broker_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: broker_db
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    external: true
