@@ -9,6 +9,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -56,10 +57,8 @@ public class PagoController {
     }
 
     @GetMapping("/orden/{id}")
-    public ResponseEntity<Pago> getPagoByOrdenId(@PathVariable String id) {
-        return pagoRepository.findByOrdenId(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<List<Pago>> getPagoByOrdenId(@PathVariable String id) {
+        return ResponseEntity.ok(pagoRepository.findByOrdenId(id));
     }
 
     @PutMapping("/{id}/reembolso")

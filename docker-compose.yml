@@ -98,6 +98,16 @@ services:
     networks:
       - app-network
 
+  frontend:
+    build: ./frontend
+    container_name: e-commerce-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - apigateway
+    networks:
+      - app-network
+
 networks:
   app-network:
     external: true

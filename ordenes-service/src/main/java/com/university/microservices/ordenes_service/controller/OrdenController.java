@@ -20,7 +20,12 @@ public class OrdenController {
     private OrdenRepository ordenRepository;
 
     @Autowired
+    private com.university.microservices.ordenes_service.repository.EnvioRepository envioRepository;
+
+    @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
+
+    private final org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
 
     @PostMapping
     public ResponseEntity<?> createOrden(@RequestBody Orden orden) {
@@ -28,6 +33,25 @@ public class OrdenController {
             if (orden.getProductosIds() == null || orden.getProductosIds().isEmpty()) {
                 throw new RuntimeException("La orden debe contener productos.");
             }
+
+            // Validar stock disponible
+            for (String productoId : orden.getProductosIds()) {
+                try {
+                    String url = "http://productos-service:8081/productos/" + productoId;
+                    Map<?, ?> producto = restTemplate.getForObject(url, Map.class);
+                    if (producto == null) {
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Producto no encontrado: " + productoId);
+                    }
+                    Integer stock = (Integer) producto.get("stock");
+                    if (stock == null || stock <= 0) {
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No hay stock suficiente para el producto: " + productoId);
+                    }
+                } catch (Exception e) {
+                    // Si falla el servicio de productos, lanzamos error
+                    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("Error validando stock: " + e.getMessage());
+                }
+            }
+
             orden.setStatus("CREATED");
             Orden saved = ordenRepository.save(orden);
             
@@ -51,11 +75,26 @@ public class OrdenController {
         }
     }
 
+    @GetMapping
+    public List<Orden> getAllOrdenes() {
+        return ordenRepository.findAll();
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Orden> getOrdenById(@PathVariable String id) {
         return ordenRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/producto/{productoId}")
+    public ResponseEntity<List<Orden>> getOrdenesByProducto(@PathVariable String productoId) {
+        return ResponseEntity.ok(ordenRepository.findByProductosIdsContaining(productoId));
+    }
+
+    @GetMapping("/envios")
+    public ResponseEntity<List<com.university.microservices.ordenes_service.model.Envio>> getAllEnvios() {
+        return ResponseEntity.ok(envioRepository.findAll());
     }
 
     @GetMapping("/usuario/{usuarioId}")

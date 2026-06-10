@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface OrdenRepository extends MongoRepository<Orden, String> {
     List<Orden> findByUsuarioId(String usuarioId);
+    List<Orden> findByProductosIdsContaining(String productoId);
 }

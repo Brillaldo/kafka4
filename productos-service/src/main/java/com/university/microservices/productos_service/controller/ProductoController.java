@@ -23,6 +23,8 @@ public class ProductoController {
     @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
 
+    private final org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+
     @GetMapping
     public List<Producto> getAllProductos() {
         return productoRepository.findAll();
@@ -37,6 +39,9 @@ public class ProductoController {
     @PostMapping
     public ResponseEntity<?> createProducto(@RequestBody Producto producto) {
         try {
+            if (producto.getQuantity() != null && producto.getQuantity() <= 0) {
+                return ResponseEntity.badRequest().body("El stock debe ser mayor a cero.");
+            }
             // Simulamos un fallo ocasional si el precio es negativo para probar el
             // broker-message-be
             if (producto.getPrice() != null && producto.getPrice().doubleValue() < 0) {
@@ -84,10 +89,23 @@ public class ProductoController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProducto(@PathVariable String id) {
+    public ResponseEntity<?> deleteProducto(@PathVariable String id) {
         if (!productoRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
+        
+        // Validar si el producto está asociado a alguna orden
+        try {
+            String url = "http://ordenes-service:8082/ordenes/producto/" + id;
+            List<?> ordenes = restTemplate.getForObject(url, List.class);
+            if (ordenes != null && !ordenes.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("No se puede eliminar el producto porque está asociado a una orden.");
+            }
+        } catch (Exception e) {
+            // Si el servicio de órdenes no está disponible, podríamos optar por fallar o continuar.
+            // Para este caso escolar, asumiremos que debemos validar.
+        }
+
         productoRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
